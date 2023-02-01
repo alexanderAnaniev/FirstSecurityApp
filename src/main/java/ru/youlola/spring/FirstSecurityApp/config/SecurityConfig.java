@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
 import ru.youlola.spring.FirstSecurityApp.services.PersonDetailsService;
 
 
@@ -22,6 +23,19 @@ public class SecurityConfig  {
         this.personDetailsService = personDetailsService;
     }
 
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf().disable()
+        .authorizeHttpRequests()
+                .requestMatchers("/auth/login","/error").permitAll()
+                .anyRequest().authenticated()
+                .and()
+                .formLogin().loginPage("/auth/login")
+                .loginProcessingUrl("/process_login")
+                .defaultSuccessUrl("/hello",true)
+                .failureUrl("/auth/login?error");
+        return http.build();
+    }
 
     @Bean
     public AuthenticationManager configure(HttpSecurity httpSecurity) throws Exception {
