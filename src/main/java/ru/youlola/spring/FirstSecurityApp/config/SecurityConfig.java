@@ -7,10 +7,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import ru.youlola.spring.FirstSecurityApp.services.PersonDetailsService;
 
 
@@ -19,16 +20,20 @@ import ru.youlola.spring.FirstSecurityApp.services.PersonDetailsService;
 public class SecurityConfig  {
 
     private final PersonDetailsService personDetailsService;
-
+    private final JWTFilter jwtFilter;
 
     @Autowired
-    public SecurityConfig(PersonDetailsService personDetailsService) {
+    public SecurityConfig(PersonDetailsService personDetailsService, JWTFilter jwtFilter) {
         this.personDetailsService = personDetailsService;
+        this.jwtFilter = jwtFilter;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests()
+        http
+                .csrf().disable()
+                .authorizeHttpRequests()
+                .requestMatchers("/admin").hasRole("ADMIN")
                 .requestMatchers("/auth/login","/auth/registration","/error").permitAll()
                 .anyRequest().hasAnyRole("USER","ADMIN")
                 .and()
@@ -38,7 +43,12 @@ public class SecurityConfig  {
                 .failureUrl("/auth/login?error")
                 .and()
                 .logout().logoutUrl("/logout")
-                .logoutSuccessUrl("/auth/login");
+                .logoutSuccessUrl("/auth/login")
+                .and()
+                .sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -56,7 +66,13 @@ public class SecurityConfig  {
     public  PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+@Bean
+public AuthenticationManager authenticationManagerBean() {
+        return authenticationManagerBean();
 }
+}
+
 
 
 
